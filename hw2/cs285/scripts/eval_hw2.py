@@ -62,83 +62,29 @@ def run_training_loop(args):
         baseline_gradient_steps=args.baseline_gradient_steps,
         gae_lambda=args.gae_lambda,
     )
-    # agent.actor.prune()
-
-    total_envsteps = 0
-    start_time = time.time()
-
-    for itr in range(args.n_iter):
-        print(f"\n********** Iteration {itr} ************")
-        # sample `args.batch_size` transitions using utils.sample_trajectories
-        # make sure to use `max_ep_len`
-        trajs, envsteps_this_batch = utils.sample_trajectories(env, agent.actor, args.batch_size, max_ep_len)
-        total_envsteps += envsteps_this_batch
-
-        # trajs should be a list of dictionaries of NumPy arrays, where each dictionary corresponds to a trajectory.
-        # this line converts this into a single dictionary of lists of NumPy arrays.
-        trajs_dict = {k: [traj[k] for traj in trajs] for k in trajs[0]}
-
-        # train the agent using the sampled trajectories and the agent's update function
-        train_info: dict = agent.update(trajs_dict["observation"], trajs_dict["action"], trajs_dict["reward"], trajs_dict["terminal"])
-
-        if itr % args.scalar_log_freq == 0:
-            # save eval metrics
-            print("\nCollecting data for eval...")
-            eval_trajs, eval_envsteps_this_batch = utils.sample_trajectories(
-                env, agent.actor, args.eval_batch_size, max_ep_len
-            )
-
-            logs = utils.compute_metrics(trajs, eval_trajs)
-            # compute additional metrics
-            logs.update(train_info)
-            logs["Train_EnvstepsSoFar"] = total_envsteps
-            logs["TimeSinceStart"] = time.time() - start_time
-            if itr == 0:
-                logs["Initial_DataCollection_AverageReturn"] = logs[
-                    "Train_AverageReturn"
-                ]
-
-            # perform the logging
-            for key, value in logs.items():
-                print("{} : {}".format(key, value))
-                logger.log_scalar(value, key, itr)
-            print("Done logging...\n\n")
-
-            logger.flush()
-
-        if args.video_log_freq != -1 and itr % args.video_log_freq == 0:
-            print("\nCollecting video rollouts...")
-            eval_video_trajs = utils.sample_n_trajectories(
-                env, agent.actor, MAX_NVIDEO, max_ep_len, render=True
-            )
-
-            logger.log_trajs_as_videos(
-                eval_video_trajs,
-                itr,
-                fps=fps,
-                max_videos_to_save=MAX_NVIDEO,
-                video_title="eval_rollouts",
-            )
-    torch.save(agent.state_dict(), "/home/nidhi/school/fa23/cs285/CS285-proj/hw2/data/mean_net.pt")
     print(f"\n********** Done Iterating ************")
-    # save eval metrics
-    print("\nCollecting data for eval...")
-    eval_trajs, eval_envsteps_this_batch = utils.sample_trajectories(
-        env, agent.actor, args.eval_batch_size, max_ep_len
-    )
-    agent.actor.prune()
-    comp_trajs, eval_envsteps_this_batch = utils.sample_trajectories(
-        env, agent.actor, args.eval_batch_size, max_ep_len
-    )
-    logs = utils.compute_eval_metrics(eval_trajs, comp_trajs)
+    for itr in range(0, 20):
+        amount = itr * 0.05
+        # save eval metrics
+        agent.load_state_dict(torch.load("/home/nidhi/school/fa23/cs285/CS285-proj/hw2/data/mean_net.pt"))
+        print("\nCollecting data for eval...")
+        eval_trajs, eval_envsteps_this_batch = utils.sample_trajectories(
+            env, agent.actor, args.eval_batch_size, max_ep_len
+        )
+        agent.actor.prune(amount)
+        agent.actor.prune_remove()
+        comp_trajs, eval_envsteps_this_batch = utils.sample_trajectories(
+            env, agent.actor, args.eval_batch_size, max_ep_len
+        )
+        logs = utils.compute_eval_metrics(eval_trajs, comp_trajs)
 
-    # perform the logging
-    for key, value in logs.items():
-        print("{} : {}".format(key, value))
-        logger.log_scalar(value, key, itr)
-    print("Done logging...\n\n")
+        # perform the logging
+        for key, value in logs.items():
+            print("{} : {}".format(key, value))
+            logger.log_scalar(value, key, itr)
+        print("Done logging...\n\n")
 
-    logger.flush()
+        logger.flush()
 
 
 def main():

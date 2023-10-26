@@ -207,6 +207,27 @@ def run_training_loop(params):
         if params['save_params']:
             print('\nSaving agent params')
             actor.save('{}/policy_itr_{}.pt'.format(params['logdir'], itr))
+    
+    print(f"\n********** Done Iterating ************")
+    # save eval metrics
+    print("\nCollecting data for eval...")
+    eval_trajs, eval_envsteps_this_batch = utils.sample_trajectories(
+        env, actor, params['eval_batch_size'], params['ep_len']
+    )
+    actor.prune()
+    comp_trajs, eval_envsteps_this_batch = utils.sample_trajectories(
+        env, actor, params['eval_batch_size'], params['ep_len']
+    )
+    logs = utils.compute_eval_metrics(eval_trajs, comp_trajs)
+
+    # perform the logging
+    for key, value in logs.items():
+        print("{} : {}".format(key, value))
+        logger.log_scalar(value, key, itr)
+    print("Done logging...\n\n")
+
+    logger.flush()
+
 
 
 def main():

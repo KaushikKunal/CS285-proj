@@ -1,6 +1,7 @@
 import itertools
 from torch import nn
 from torch.nn import functional as F
+from torch.nn.utils import prune
 from torch import optim
 
 import numpy as np
@@ -114,3 +115,16 @@ class MLPPolicyPG(MLPPolicy):
         return {
             "Actor Loss": ptu.to_numpy(loss),
         }
+    
+    def prune(self, amount=0.2):
+        """Prunes the mean net"""
+        parameters_to_prune = tuple((layer, 'weight') for layer in self.mean_net[0:-1:2])
+        print(parameters_to_prune)
+        prune.global_unstructured(
+            parameters_to_prune,
+            pruning_method=prune.L1Unstructured,
+            amount=amount,
+        )
+
+    def prune_remove(self):
+        parameters_to_prune = tuple(prune.remove(layer, 'weight') for layer in self.mean_net[0:-1:2])

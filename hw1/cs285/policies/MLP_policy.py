@@ -11,6 +11,7 @@ import itertools
 from typing import Any
 from torch import nn
 from torch.nn import functional as F
+from torch.nn.utils import prune
 from torch import optim
 
 import numpy as np
@@ -164,3 +165,14 @@ class MLPPolicySL(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
             # You can add extra logging information here, but keep this line
             'Training Loss': ptu.to_numpy(loss),
         }
+    
+    def prune(self):
+        """Prunes the mean net"""
+        parameters_to_prune = tuple((layer, 'weight') for layer in self.mean_net[0:-1:2])
+        print("oh say can you see")
+        print(f"{parameters_to_prune=}")
+        prune.global_unstructured(
+            parameters_to_prune,
+            pruning_method=prune.L1Unstructured,
+            amount=0.2,
+        )

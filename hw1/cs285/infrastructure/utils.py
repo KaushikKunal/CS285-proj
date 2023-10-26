@@ -146,6 +146,34 @@ def compute_metrics(paths, eval_paths):
     return logs
 
 
+def compute_eval_metrics(eval_trajs, comp_trajs):
+    """Compute metrics for logging."""
+
+    # returns, for logging
+    comp_returns = [comp_traj["reward"].sum() for comp_traj in comp_trajs]
+    eval_returns = [eval_traj["reward"].sum() for eval_traj in eval_trajs]
+
+    # episode lengths, for logging
+    comp_ep_lens = [len(traj["reward"]) for traj in comp_trajs]
+    eval_ep_lens = [len(eval_traj["reward"]) for eval_traj in eval_trajs]
+
+    # decide what to log
+    logs = OrderedDict()
+    logs["Eval_AverageReturn"] = np.mean(eval_returns)
+    logs["Eval_StdReturn"] = np.std(eval_returns)
+    logs["Eval_MaxReturn"] = np.max(eval_returns)
+    logs["Eval_MinReturn"] = np.min(eval_returns)
+    logs["Eval_AverageEpLen"] = np.mean(eval_ep_lens)
+
+    logs["Comp_AverageReturn"] = np.mean(comp_returns)
+    logs["Comp_StdReturn"] = np.std(comp_returns)
+    logs["Comp_MaxReturn"] = np.max(comp_returns)
+    logs["Comp_MinReturn"] = np.min(comp_returns)
+    logs["Comp_AverageEpLen"] = np.mean(comp_ep_lens)
+
+    return logs
+
+
 ############################################
 ############################################
 
