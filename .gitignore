@@ -1,3 +1,7 @@
+data/
+cs285.egg-info/
+.DS_Store
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

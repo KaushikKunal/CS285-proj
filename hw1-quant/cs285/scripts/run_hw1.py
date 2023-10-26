@@ -96,7 +96,9 @@ def run_training_loop(params):
         learning_rate=params['learning_rate'],
     )
 
+    print(actor.mean_net)
     actor.mean_net = my_utils.shrink_that_thang(actor.mean_net, debug_print=True)
+    print(actor.mean_net)
     # exit()
     # print("ACTOR SIZE: %.2f MB" % my_utils.get_model_size(actor.mean_net))
     
