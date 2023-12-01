@@ -111,6 +111,7 @@ class MLPPolicyPG(MLPPolicy):
             log_probs = torch.sum(self(obs).log_prob(actions), dim=1)
         loss = -torch.mean(log_probs*advantages)
         self.optimizer.zero_grad()
+        import ipdb; ipdb.set_trace()
         loss.backward()
         self.optimizer.step()
 

@@ -17,6 +17,7 @@ import tqdm
 from cs285.infrastructure import utils
 from cs285.infrastructure.logger import Logger
 from cs285.infrastructure.replay_buffer import MemoryEfficientReplayBuffer, ReplayBuffer
+from cs285.scripts import my_utils
 
 from scripting_utils import make_logger, make_config
 
@@ -43,6 +44,13 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
         env.action_space.n,
         **config["agent_kwargs"],
     )
+
+    print("COMPRESSING MODEL") 
+    print(agent.critic)
+    # agent.critic = my_utils.shrink_that_thang(agent.critic, debug_print=True)
+    agent.target_critic = my_utils.shrink_that_thang(agent.target_critic, debug_print=True)
+    print(agent.critic)
+    # exit()
 
     # simulation timestep, will be used for video saving
     if "model" in dir(env):

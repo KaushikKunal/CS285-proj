@@ -83,9 +83,8 @@ class DQNAgent(nn.Module):
         qa_values = self.critic(obs)
         q_values = torch.gather(qa_values, dim=1, index=action.unsqueeze(1)).squeeze(1) # Compute from the data actions; see torch.gather
         loss = self.critic_loss(q_values, target_values)
-
-
         self.critic_optimizer.zero_grad()
+        import pdb; pdb.set_trace()
         loss.backward()
         grad_norm = torch.nn.utils.clip_grad.clip_grad_norm_(
             self.critic.parameters(), self.clip_grad_norm or float("inf")
