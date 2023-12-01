@@ -146,17 +146,14 @@ class DQNAgent(nn.Module):
         tuple(prune.remove(layer, 'weight') for layer in self.target_critic[0:-1:2])
 
     def lra(self, amount=0.2):
-        layers_to_approx = [layer for layer in self.critic[0:-1:2]] + [layer for layer in self.target_critic[0:-1:2]]
-        for layer in layers_to_approx:
-            print(layer.weight)
-            weights = layer.weight
+        for parameter in self.critic.parameters():
+            weights = parameter.data
+            if len(weights.shape) == 1:
+                # this parameter corresponds to bias
+                continue
             rank = min(weights.shape[0], weights.shape[1])
             remaining_rank = int(((1-amount) * rank) // 1)
             U, S, V = torch.svd(weights)
             S[remaining_rank:] = torch.zeros((rank-remaining_rank))
             lra_weights = torch.matmul(torch.matmul(U, torch.diag_embed(S)), V.mT)
-            print(torch.nn.Parameter(lra_weights))
-            layer.weight = lra_weights # torch.nn.Parameter(lra_weights)
-            print(f"{weights.shape=}\n {U.shape=}\n {S.shape=}\n {V.shape=}\n {remaining_rank=}\n {torch.dist(weights, lra_weights)=}")
-    
-        print([parameter for parameter in self.critic.parameters()])
+            parameter.data = lra_weights

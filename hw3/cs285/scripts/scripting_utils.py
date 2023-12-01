@@ -3,7 +3,7 @@ import os
 import time
 
 import cs285.env_configs
-from cs285.infrastructure.logger import Logger
+from cs285.infrastructure.logger import Logger, FakeLogger
 
 def make_config(config_file: str) -> dict:
     config_kwargs = {}
@@ -27,3 +27,7 @@ def make_logger(logdir_prefix: str, config: dict) -> Logger:
         os.makedirs(logdir)
 
     return Logger(logdir)
+
+
+def make_fake_logger() -> FakeLogger:
+    return FakeLogger()
