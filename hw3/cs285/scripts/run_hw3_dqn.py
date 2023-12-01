@@ -179,8 +179,8 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
                     video_title="eval_rollouts",
                 )
     torch.save(agent.state_dict(), "./models/"+config["log_name"]+"agent.pt")
-    torch.save(agent.critic.state_dict, "./models/"+config["log_name"]+"critic.pt")
-    torch.save(agent.target_critic.state_dict, "./models/"+config["log_name"]+"target_critic.pt")
+    torch.save(agent.critic.state_dict(), "./models/"+config["log_name"]+"critic.pt")
+    torch.save(agent.target_critic.state_dict(), "./models/"+config["log_name"]+"target_critic.pt")
 
 
 def main():

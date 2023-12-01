@@ -146,6 +146,8 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
                     max_videos_to_save=args.num_render_trajectories,
                     video_title="eval_rollouts",
                 )
+    torch.save(agent.state_dict(), "./models/"+config["log_name"]+"agent.pt")
+    torch.save(agent.actor.state_dict(), "./models/"+config["log_name"]+"actor.pt")
 
 
 def main():
