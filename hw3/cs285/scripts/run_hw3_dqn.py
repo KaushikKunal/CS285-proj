@@ -18,7 +18,7 @@ from cs285.infrastructure import utils
 from cs285.infrastructure.logger import Logger
 from cs285.infrastructure.replay_buffer import MemoryEfficientReplayBuffer, ReplayBuffer
 
-from scripting_utils import make_logger, make_config
+from cs285.scripts.scripting_utils import make_logger, make_config
 
 MAX_NVIDEO = 2
 
@@ -199,7 +199,7 @@ def main():
     args = parser.parse_args()
 
     # create directory for logging
-    logdir_prefix = "hw3_dqn_"  # keep for autograder
+    logdir_prefix = "train_dqn_"  # keep for autograder
 
     config = make_config(args.config_file)
     logger = make_logger(logdir_prefix, config)

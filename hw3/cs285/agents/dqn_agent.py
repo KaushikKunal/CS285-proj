@@ -2,6 +2,7 @@ from typing import Sequence, Callable, Tuple, Optional
 
 import torch
 from torch import nn
+from torch.nn.utils import prune
 
 import numpy as np
 
@@ -122,3 +123,40 @@ class DQNAgent(nn.Module):
             self.update_target_critic()
 
         return critic_stats
+    
+    def prune(self, amount=0.2):
+        """Prunes the mean net"""
+        parameters_to_prune = tuple((layer, 'weight') for layer in self.critic[0:-1:2])
+        print(parameters_to_prune)
+        prune.global_unstructured(
+            parameters_to_prune,
+            pruning_method=prune.L1Unstructured,
+            amount=amount,
+        )
+        parameters_to_prune = tuple((layer, 'weight') for layer in self.target_critic[0:-1:2])
+        print(parameters_to_prune)
+        prune.global_unstructured(
+            parameters_to_prune,
+            pruning_method=prune.L1Unstructured,
+            amount=amount,
+        )
+
+    def prune_remove(self):
+        tuple(prune.remove(layer, 'weight') for layer in self.critic[0:-1:2])
+        tuple(prune.remove(layer, 'weight') for layer in self.target_critic[0:-1:2])
+
+    def lra(self, amount=0.2):
+        layers_to_approx = [layer for layer in self.critic[0:-1:2]] + [layer for layer in self.target_critic[0:-1:2]]
+        for layer in layers_to_approx:
+            print(layer.weight)
+            weights = layer.weight
+            rank = min(weights.shape[0], weights.shape[1])
+            remaining_rank = int(((1-amount) * rank) // 1)
+            U, S, V = torch.svd(weights)
+            S[remaining_rank:] = torch.zeros((rank-remaining_rank))
+            lra_weights = torch.matmul(torch.matmul(U, torch.diag_embed(S)), V.mT)
+            print(torch.nn.Parameter(lra_weights))
+            layer.weight = lra_weights # torch.nn.Parameter(lra_weights)
+            print(f"{weights.shape=}\n {U.shape=}\n {S.shape=}\n {V.shape=}\n {remaining_rank=}\n {torch.dist(weights, lra_weights)=}")
+    
+        print([parameter for parameter in self.critic.parameters()])

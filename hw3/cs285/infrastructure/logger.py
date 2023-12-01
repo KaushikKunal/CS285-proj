@@ -70,5 +70,10 @@ class Logger:
         self._summ_writer.flush()
 
 
+class FakeLogger:
+    def log_scalar(self, val, str, step):
+        print(str, val)
 
+    def log_paths_as_videos(a, b, fps=None, max_videos_to_save=None, video_title=None):
+        return
 
