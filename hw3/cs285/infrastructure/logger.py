@@ -1,6 +1,7 @@
 import os
 from tensorboardX import SummaryWriter
 import numpy as np
+import pandas as pd
 
 class Logger:
     def __init__(self, log_dir, n_logged_samples=10, summary_writer=None):
@@ -73,7 +74,41 @@ class Logger:
 class FakeLogger:
     def log_scalar(self, val, str, step):
         print(str, val)
+    
+
 
     def log_paths_as_videos(a, b, fps=None, max_videos_to_save=None, video_title=None):
         return
 
+class CSVLogger:
+    def __init__(self, log_dir, latent):
+        self._log_dir = log_dir
+        print('########################')
+        print('logging outputs to ', log_dir)
+        print('########################')
+        self._log_file = log_dir + "/data.csv"
+        if not os.path.exists(self._log_file) or os.path.getsize(self._log_file) == 0:
+            f = open(self._log_file, 'x')
+            f.close()
+            df = pd.DataFrame(columns=[])
+            df.to_csv(self._log_file)
+            self._row = 0
+            self._columns = []
+        else:
+            df = pd.read_csv(self._log_file)
+            self._row = len(df)
+            if latent:
+                self._row -= 1
+            self._columns = list(df.columns)
+            
+    def log_scalar(self, scalar, name, step=0, display=False):
+        df = pd.read_csv(self._log_file)
+        df.loc[self._row, name] = scalar
+        df.to_csv(self._log_file, index=False)
+        if display:
+            print(df)
+    
+
+
+    def log_paths_as_videos(a, b, fps=None, max_videos_to_save=None, video_title=None):
+        return

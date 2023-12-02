@@ -4,7 +4,7 @@ import argparse
 from cs285.agents.dqn_agent import DQNAgent
 import cs285.env_configs
 
-import os
+import os, sys
 import time
 
 import gym
@@ -127,14 +127,14 @@ def main():
     args = parser.parse_args()
 
     # create directory for logging
-    logdir_prefix = f"eval_dqn_prune{args.prune_amount}_rank{args.derank_amount}_"
+    logdir_prefix = f"eval_dqn_prune{args.prune_amount}_rank{args.derank_amount}_" #talk to andrew if you want to change this
 
     config = make_config(args.config_file)
     if not args.no_log:
-        logger = make_logger(logdir_prefix, config)
+        logger = make_logger(logdir_prefix, config, csv=True)
     else:
         logger = make_fake_logger()
-
+    
     run_eval_loop(config, logger, args)
 
 
