@@ -4,6 +4,7 @@ import subprocess, sys, os, fcntl, argparse, pandas, psutil, signal
 from pynvml import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetPowerUsage, nvmlShutdown
 from cs285.scripts.scripting_utils import make_logger, make_config
 
+USE_EXCLUSIVE_CORES = True
 poll_keyword = "--poll" #parameters for user
 argv = sys.argv
 if poll_keyword in argv: #POLLING_INTERVAL IS THE NUMBER OF SECONDS BETWEEN POLLS OF POWER CONSUMPTION
@@ -23,22 +24,38 @@ else:
 nvmlInit()
 gpu = nvmlDeviceGetHandleByIndex(0) #Gaurav's pc only has one recognized device so the zeroth device is the 1660 ti
 num_polls, power_sum = 0, 0
-minute_averaged_powers = []
 
 
 cmd = " ".join(argv[1:])
+if (USE_EXCLUSIVE_CORES):
+    cmd = "taskset -c 7 " + cmd  # TODO: hardcoded core to 7 rn
 p = subprocess.Popen(cmd, shell=True, stdout=None, stderr=None)
+parent = psutil.Process(p.pid)
+child_pid = parent.children(recursive=True)[0].pid
+
 #p = subprocess.run(cmd, shell=True)
 #process = psutil.Process(p.pid)
 #sleep(1)
 
+def get_utilization(pid):
+    ps_output = subprocess.run(("ps -p {} -o %cpu,%mem".format(pid)), capture_output=True, text=True, shell=True)
+    
+    if (len(ps_output.stdout.split('\n')) < 3):
+        return 0.0, 0.0
+    cpu, mem = ps_output.stdout.split('\n')[1].split()
+    return float(cpu), float(mem)
 
-
+# arrays storing utilization data
+cpu_arr = []
+mem_arr = []
 
 while p.poll() == None:
     sleep(polling_interval)
     num_polls += 1
     power_sum += nvmlDeviceGetPowerUsage(gpu)
+    cpu, mem = get_utilization(child_pid)
+    cpu_arr.append(cpu)
+    mem_arr.append(mem)
     #print(p.virtual_memory())
     #print(process.cpu_percent(polling_interval))
     
@@ -58,9 +75,15 @@ if "cs285/scripts/eval_hw3_dqn.py" in sys.argv:
     config = make_config(args.config_file)
     if not args.no_log:
         logger = make_logger(logdir_prefix, config, csv=True, latent=True)
+        logger_utilization = make_logger(logdir_prefix + "utilization_", config, csv=True, latent=False)
         logger.log_scalar(power_sum / (num_polls + 1e-5), "average_power (mw)")
         logger.log_scalar(num_polls, "number of polls")
-        logger.log_scalar(polling_interval, "polling_interval", display=True)
+        logger.log_scalar(polling_interval, "polling_interval")
+        logger_utilization.log_scalar(str(cpu_arr), "cpu%")
+        logger_utilization.log_scalar(str(mem_arr), "mem%")
+        logger.log_scalar(sum(cpu_arr)/(num_polls + 1e-5), "avg_cpu%")
+        logger.log_scalar(sum(mem_arr)/(num_polls + 1e-5), "avg_mem%", display=True)
+        
 
     
 
