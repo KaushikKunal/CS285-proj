@@ -23,6 +23,8 @@ class DQNAgent(nn.Module):
         target_update_period: int,
         use_double_q: bool = False,
         clip_grad_norm: Optional[float] = None,
+        prune_amount: float = 0,
+        lra_amount: float = 0,
     ):
         super().__init__()
 
@@ -37,6 +39,8 @@ class DQNAgent(nn.Module):
         self.target_update_period = target_update_period
         self.clip_grad_norm = clip_grad_norm
         self.use_double_q = use_double_q
+        self.prune_amount = prune_amount
+        self.lra_amount = lra_amount
 
         self.critic_loss = nn.MSELoss()
 
@@ -104,6 +108,9 @@ class DQNAgent(nn.Module):
 
     def update_target_critic(self):
         self.target_critic.load_state_dict(self.critic.state_dict())
+        self.prune(self.prune_amount, False, True)
+        self.prune_remove(False, True)
+        self.lra(self.lra_amount, self.target_critic)
 
     def update(
         self,
@@ -124,35 +131,42 @@ class DQNAgent(nn.Module):
 
         return critic_stats
     
-    def prune(self, amount=0.2):
-        """Prunes the mean net"""
-        parameters_to_prune = tuple((layer, 'weight') for layer in self.critic[0:-1:2])
-        print(parameters_to_prune)
-        prune.global_unstructured(
-            parameters_to_prune,
-            pruning_method=prune.L1Unstructured,
-            amount=amount,
-        )
-        parameters_to_prune = tuple((layer, 'weight') for layer in self.target_critic[0:-1:2])
-        print(parameters_to_prune)
-        prune.global_unstructured(
-            parameters_to_prune,
-            pruning_method=prune.L1Unstructured,
-            amount=amount,
-        )
+    def prune(self, amount=0.2, critic=True, target=False):
+        """Prunes the critic nets"""
+        if critic:
+            parameters_to_prune = tuple((layer, 'weight') for layer in self.critic[0:-1:2])
+            prune.global_unstructured(
+                parameters_to_prune,
+                pruning_method=prune.L1Unstructured,
+                amount=amount,
+            )
+        if target:
+            parameters_to_prune = tuple((layer, 'weight') for layer in self.target_critic[0:-1:2])
+            prune.global_unstructured(
+                parameters_to_prune,
+                pruning_method=prune.L1Unstructured,
+                amount=amount,
+            )
 
-    def prune_remove(self):
-        tuple(prune.remove(layer, 'weight') for layer in self.critic[0:-1:2])
-        tuple(prune.remove(layer, 'weight') for layer in self.target_critic[0:-1:2])
+    def prune_remove(self, critic=True, target=False):
+        """gets rid of the metadata that pruning adds to nets"""
+        if critic:
+            tuple(prune.remove(layer, 'weight') for layer in self.critic[0:-1:2])
+        if target:
+            tuple(prune.remove(layer, 'weight') for layer in self.target_critic[0:-1:2])
 
-    def lra(self, amount=0.2):
-        for parameter in self.critic.parameters():
+    def lra(self, amount=0.2, network=None):
+        """performs low rank approximation on the given network"""
+        if network is None:
+            network = self.critic
+        for parameter in network.parameters():
             weights = parameter.data
             if len(weights.shape) == 1:
                 # this parameter corresponds to bias
                 continue
             rank = min(weights.shape[0], weights.shape[1])
-            remaining_rank = int(((1-amount) * rank) // 1)
+            # if rank > 16: # this would stop us from quantizing already small networks - worth keeping?
+            remaining_rank = int(np.ceil((1-amount)*rank))
             U, S, V = torch.svd(weights)
             S[remaining_rank:] = torch.zeros((rank-remaining_rank))
             lra_weights = torch.matmul(torch.matmul(U, torch.diag_embed(S)), V.mT)

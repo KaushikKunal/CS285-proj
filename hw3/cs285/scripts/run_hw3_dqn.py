@@ -18,7 +18,7 @@ from cs285.infrastructure import utils
 from cs285.infrastructure.logger import Logger
 from cs285.infrastructure.replay_buffer import MemoryEfficientReplayBuffer, ReplayBuffer
 
-from cs285.scripts.scripting_utils import make_logger, make_config
+from cs285.scripts.scripting_utils import make_logger, make_config, make_fake_logger
 
 MAX_NVIDEO = 2
 
@@ -42,7 +42,11 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
         env.observation_space.shape,
         env.action_space.n,
         **config["agent_kwargs"],
+        prune_amount=args.prune_amount,
+        lra_amount=args.derank_amount,
     )
+    if args.load_model:
+        agent.load_state_dict(torch.load("./models/dqn_LunarLander-v2_s64_l2_d0.99_doubleqagent.pt"))
 
     # simulation timestep, will be used for video saving
     if "model" in dir(env):
@@ -142,12 +146,20 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
 
         if step % args.eval_interval == 0:
             # Evaluate
-            trajectories = utils.sample_n_trajectories(
-                eval_env,
-                agent,
-                args.num_eval_trajectories,
-                ep_len,
-            )
+            if step != config["total_steps"]-1:
+                trajectories = utils.sample_n_trajectories(
+                    eval_env,
+                    agent,
+                    args.num_eval_trajectories,
+                    ep_len,
+                )
+            else:
+                trajectories = utils.sample_n_trajectories(
+                    eval_env,
+                    agent,
+                    args.num_end_eval_trajectories,
+                    ep_len,
+                )
             returns = [t["episode_statistics"]["r"] for t in trajectories]
             ep_lens = [t["episode_statistics"]["l"] for t in trajectories]
 
@@ -178,9 +190,10 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
                     max_videos_to_save=args.num_render_trajectories,
                     video_title="eval_rollouts",
                 )
-    torch.save(agent.state_dict(), "./models/"+config["log_name"]+"agent.pt")
-    torch.save(agent.critic.state_dict(), "./models/"+config["log_name"]+"critic.pt")
-    torch.save(agent.target_critic.state_dict(), "./models/"+config["log_name"]+"target_critic.pt")
+    if args.save_model:
+        torch.save(agent.state_dict(), "./models/"+config["log_name"]+"_agent.pt")
+        torch.save(agent.critic.state_dict(), "./models/"+config["log_name"]+"_critic.pt")
+        torch.save(agent.target_critic.state_dict(), "./models/"+config["log_name"]+"_target_critic.pt")
 
 
 def main():
@@ -189,6 +202,7 @@ def main():
 
     parser.add_argument("--eval_interval", "-ei", type=int, default=10000)
     parser.add_argument("--num_eval_trajectories", "-neval", type=int, default=10)
+    parser.add_argument("--num_end_eval_trajectories", "-neeval", type=int, default=10)
     parser.add_argument("--num_render_trajectories", "-nvid", type=int, default=0)
 
     parser.add_argument("--seed", type=int, default=1)
@@ -196,13 +210,22 @@ def main():
     parser.add_argument("--which_gpu", "-gpu_id", default=0)
     parser.add_argument("--log_interval", type=int, default=1000)
 
+    parser.add_argument("--prune_amount", "-pa", type=float, default=0)
+    parser.add_argument("--derank_amount", "-lra", type=float, default=0)
+    parser.add_argument("--no_log", "-nlog", action="store_true")
+    parser.add_argument("--load_model", "-load", action="store_true")
+    parser.add_argument("--save_model", "-save", action="store_true")
+
     args = parser.parse_args()
 
     # create directory for logging
-    logdir_prefix = "train_dqn_"  # keep for autograder
+    logdir_prefix = f"train_dqn_prune{args.prune_amount}_lra{args.derank_amount}_"  # keep for autograder
 
     config = make_config(args.config_file)
-    logger = make_logger(logdir_prefix, config)
+    if not args.no_log:
+        logger = make_logger(logdir_prefix, config, csv=True)
+    else:
+        logger = make_fake_logger()
 
     run_training_loop(config, logger, args)
 

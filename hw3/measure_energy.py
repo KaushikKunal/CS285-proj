@@ -66,12 +66,30 @@ nvmlShutdown()
 
 if "cs285/scripts/eval_hw3_dqn.py" in sys.argv:
     parser = argparse.ArgumentParser(allow_abbrev=False)
-    parser.add_argument("--prune_amount", "-pa", type=float, default=0)
-    parser.add_argument("--derank_amount", "-lra", type=float, default=0)
     parser.add_argument("--no_log", "-nlog", action="store_true")
     parser.add_argument("--config_file", "-cfg", type=str, required=True)
     args, unknown = parser.parse_known_args()
     logdir_prefix = f"eval_dqn_"
+    config = make_config(args.config_file)
+    if not args.no_log:
+        logger = make_logger(logdir_prefix, config, csv=True, latent=True)
+        logger_utilization = make_logger(logdir_prefix + "utilization_", config, csv=True, latent=False)
+        logger.log_scalar(power_sum / (num_polls + 1e-5), "average_power (mw)")
+        logger.log_scalar(num_polls, "number of polls")
+        logger.log_scalar(polling_interval, "polling_interval")
+        logger_utilization.log_scalar(str(cpu_arr), "cpu%")
+        logger_utilization.log_scalar(str(mem_arr), "mem%")
+        logger.log_scalar(sum(cpu_arr)/(num_polls + 1e-5), "avg_cpu%")
+        logger.log_scalar(sum(mem_arr)/(num_polls + 1e-5), "avg_mem%", display=True)
+
+if "cs285/scripts/run_hw3_dqn.py" in sys.argv:
+    parser = argparse.ArgumentParser(allow_abbrev=False)
+    parser.add_argument("--no_log", "-nlog", action="store_true")
+    parser.add_argument("--config_file", "-cfg", type=str, required=True)
+    parser.add_argument("--prune_amount", "-pa", type=float, default=0)
+    parser.add_argument("--derank_amount", "-lra", type=float, default=0)
+    args, unknown = parser.parse_known_args()
+    logdir_prefix = f"train_dqn_"
     config = make_config(args.config_file)
     if not args.no_log:
         logger = make_logger(logdir_prefix, config, csv=True, latent=True)

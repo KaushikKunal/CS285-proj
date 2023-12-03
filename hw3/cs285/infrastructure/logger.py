@@ -72,12 +72,14 @@ class Logger:
 
 
 class FakeLogger:
-    def log_scalar(self, val, str, step):
-        print(str, val)
+    def log_scalar(self, val, str, step=None):
+        if step % 1000 == 0:
+            print(str, val)
     
+    def log_paths_as_videos(self, a, b, fps=None, max_videos_to_save=None, video_title=None):
+        return
 
-
-    def log_paths_as_videos(a, b, fps=None, max_videos_to_save=None, video_title=None):
+    def flush(self):
         return
 
 class CSVLogger:

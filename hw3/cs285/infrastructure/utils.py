@@ -157,30 +157,3 @@ def convert_listofrollouts(trajs):
 
 def get_traj_length(traj):
     return len(traj["reward"])
-
-
-import fcntl, time
-from pynvml import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetPowerUsage, nvmlShutdown
-# def measure_power(line, polling_interval=1):
-#     (r, w) = os.pipe()
-#     if os.fork() == 0: # child
-#         w = open(w, 'w')
-#         try:
-#             exec(line)
-#         except KeyboardInterrupt:
-#             pass
-#         w.write("yum")
-#     else: # parent
-#         r = open(r, 'r')
-#         fcntl.fcntl(r, fcntl.F_SETFL, os.O_NONBLOCK) # otherwise file read() blocks
-#         num_polls, power_sum = 0, 0
-#         nvmlInit()
-#         gpu = nvmlDeviceGetHandleByIndex(0) #Gaurav's pc only has one recognized device so the zeroth device is the 1660 ti
-#         while (r.read(1) == ""):
-#             time.sleep(polling_interval)
-#             num_polls += 1
-#             power_sum += nvmlDeviceGetPowerUsage(gpu)
-        
-#         print("mean power usage in mw: ", power_sum / num_polls)
-#         nvmlShutdown()
-#     return power_sum / num_polls
