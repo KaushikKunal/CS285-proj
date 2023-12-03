@@ -134,6 +134,11 @@ def main():
         logger = make_logger(logdir_prefix, config, csv=True)
     else:
         logger = make_fake_logger()
+
+    logger.log_scalar(args.prune_amount, "prune_amount")
+    logger.log_scalar(args.derank_amount, "derank_amount")
+    logger.log_scalar(args.num_eval_trajectories, "num_eval_trajectories")
+
     
     run_eval_loop(config, logger, args)
 
