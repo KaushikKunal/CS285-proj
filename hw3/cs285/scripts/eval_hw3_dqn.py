@@ -127,7 +127,7 @@ def main():
     args = parser.parse_args()
 
     # create directory for logging
-    logdir_prefix = f"eval_dqn_prune{args.prune_amount}_rank{args.derank_amount}_" #talk to andrew if you want to change this
+    logdir_prefix = f"eval_dqn_" #talk to andrew if you want to change this
 
     config = make_config(args.config_file)
     if not args.no_log:

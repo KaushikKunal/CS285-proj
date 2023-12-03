@@ -54,7 +54,7 @@ if "cs285/scripts/eval_hw3_dqn.py" in sys.argv:
     parser.add_argument("--no_log", "-nlog", action="store_true")
     parser.add_argument("--config_file", "-cfg", type=str, required=True)
     args, unknown = parser.parse_known_args()
-    logdir_prefix = f"eval_dqn_prune{args.prune_amount}_rank{args.derank_amount}_"
+    logdir_prefix = f"eval_dqn_"
     config = make_config(args.config_file)
     if not args.no_log:
         logger = make_logger(logdir_prefix, config, csv=True, latent=True)
